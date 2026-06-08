@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TOEIC Vocab Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>📚 TOEIC Vocab Game by P</h1>
+
+    <div class="set-selector-container">
+        <label for="set-select" style="font-weight: bold;">หมวดศัพท์:</label>
+        <select id="set-select" class="set-select" onchange="changeVocabSet(this.value)">
+            <option value="set1">ชุดที่ 1: Marketing & Sales (30 คำ)</option>
+            <option value="set2">ชุดที่ 2: Finance & Accounting (30 คำ)</option>
+            <option value="set3">ชุดที่ 3: Corporate Management (30 คำ)</option>
+            <option value="set4">ชุดที่ 4: Human Resources (30 คำ)</option>
+            <option value="set5">ชุดที่ 5: Office Administration (30 คำ)</option>
+            <option value="set6">ชุดที่ 6: Purchasing & Logistics (30 คำ)</option>
+            <option value="set7">ชุดที่ 7: Manufacturing (30 คำ)</option>
+            <option value="set8">ชุดที่ 8: Travel & Transport (30 คำ)</option>
+            <option value="set9">ชุดที่ 9: Hospitality & Catering (30 คำ)</option>
+            <option value="set10">ชุดที่ 10: Health & Technology (30 คำ)</option>
+        </select>
+    </div>
+
+    <div class="nav-buttons">
+        <button id="btn-flashcard" class="active" onclick="switchMode('flashcard')">📝 Flashcard</button>
+        <button id="btn-quiz" onclick="switchMode('quiz')">🎮 Quiz Game</button>
+    </div>
+
+    <div id="flashcard-mode" class="mode-container active">
+        <p style="font-size: 14px; color: #777; margin-top: 0;">แตะที่การ์ดเพื่อดูคำแปล</p>
+        <div class="scene">
+            <div class="card" id="flashcard" onclick="flipCard()">
+                <div class="card-face card-front" id="fc-word">Word</div>
+                <div class="card-face card-back" id="fc-meaning">Meaning</div>
+            </div>
+        </div>
+        <div class="flashcard-controls">
+            <button onclick="prevCard()">⬅️ ย้อนกลับ</button>
+            <span id="fc-counter">1/30</span>
+            <button onclick="nextCard()">ถัดไป ➡️</button>
+        </div>
+    </div>
+
+    <div id="quiz-mode" class="mode-container">
+        <div class="score-board">คะแนนปัจจุบัน: <span id="score">0</span></div>
+        <div class="quiz-word" id="quiz-word">Word</div>
+        <div class="choices" id="choices-container">
+            </div>
+        <button id="next-quiz" class="next-quiz-btn" onclick="nextQuiz()">ข้อถัดไป ➡️</button>
+    </div>
+
+    <script src="vocab.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
