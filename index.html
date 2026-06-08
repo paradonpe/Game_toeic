@@ -8,7 +8,7 @@
 </head>
 <body>
 
-    <h1>📚 TOEIC Vocab Game by P</h1>
+    <h1>📚 TOEIC Vocab Game</h1>
 
     <div class="set-selector-container">
         <label for="set-select" style="font-weight: bold;">หมวดศัพท์:</label>
@@ -29,6 +29,7 @@
     <div class="nav-buttons">
         <button id="btn-flashcard" class="active" onclick="switchMode('flashcard')">📝 Flashcard</button>
         <button id="btn-quiz" onclick="switchMode('quiz')">🎮 Quiz Game</button>
+        <button id="btn-runner" onclick="switchMode('runner')">🏃‍♂️ Time Runner</button>
     </div>
 
     <div id="flashcard-mode" class="mode-container active">
@@ -49,9 +50,36 @@
     <div id="quiz-mode" class="mode-container">
         <div class="score-board">คะแนนปัจจุบัน: <span id="score">0</span></div>
         <div class="quiz-word" id="quiz-word">Word</div>
-        <div class="choices" id="choices-container">
-            </div>
+        <div class="choices" id="choices-container"></div>
         <button id="next-quiz" class="next-quiz-btn" onclick="nextQuiz()">ข้อถัดไป ➡️</button>
+    </div>
+
+    <div id="runner-mode" class="mode-container" style="position: relative;">
+        <div class="runner-header">
+            <div class="lives-board">ชีวิต: <span id="runner-lives">❤️❤️❤️</span></div>
+            <div class="runner-score-board">
+                คะแนน: <span id="runner-score">0</span>
+                <span id="runner-multiplier" class="multiplier-badge" style="display:none;">X2 🔥</span>
+            </div>
+        </div>
+        
+        <div id="game-arena">
+            <div id="runner-character">🏃‍♂️</div>
+            <div id="obstacle-container"></div>
+            <div id="slow-mo-overlay">⚡ SLOW MOTION ⚡</div>
+        </div>
+
+        <div id="runner-quiz-box" style="display: none;">
+            <div class="timer-bar-container"><div id="timer-bar"></div></div>
+            <div class="quiz-word" id="runner-quiz-word">Word</div>
+            <div class="choices" id="runner-choices-container"></div>
+        </div>
+
+        <div id="runner-gameover" class="gameover-overlay" style="display: none;">
+            <h2>🚫 GAME OVER 🚫</h2>
+            <p>คุณวิ่งไปได้ทั้งหมด: <strong style="font-size: 24px; color: var(--secondary);" id="final-runner-score">0</strong> คะแนน</p>
+            <button onclick="startRunnerGame()" style="background-color: var(--secondary); margin-top: 15px;">🔄 วิ่งใหม่อีกครั้ง</button>
+        </div>
     </div>
 
     <script src="vocab.js"></script>
