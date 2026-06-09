@@ -8,77 +8,173 @@
 </head>
 <body>
 
-    <h1>📚 TOEIC Vocab Game</h1>
+    <!-- ปุ่มลอยสลับ Dark/Light Mode -->
+    <button id="theme-toggle-btn" class="floating-theme-btn" onclick="toggleTheme()" aria-label="Toggle Theme">🌓</button>
 
-    <div class="set-selector-container">
-        <label for="set-select" style="font-weight: bold;">หมวดศัพท์:</label>
-        <select id="set-select" class="set-select" onchange="changeVocabSet(this.value)">
-            <option value="set1">ชุดที่ 1: Marketing & Sales (30 คำ)</option>
-            <option value="set2">ชุดที่ 2: Finance & Accounting (30 คำ)</option>
-            <option value="set3">ชุดที่ 3: Corporate Management (30 คำ)</option>
-            <option value="set4">ชุดที่ 4: Human Resources (30 คำ)</option>
-            <option value="set5">ชุดที่ 5: Office Administration (30 คำ)</option>
-            <option value="set6">ชุดที่ 6: Purchasing & Logistics (30 คำ)</option>
-            <option value="set7">ชุดที่ 7: Manufacturing (30 คำ)</option>
-            <option value="set8">ชุดที่ 8: Travel & Transport (30 คำ)</option>
-            <option value="set9">ชุดที่ 9: Hospitality & Catering (30 คำ)</option>
-            <option value="set10">ชุดที่ 10: Health & Technology (30 คำ)</option>
-        </select>
-    </div>
-
-    <div class="nav-buttons">
-        <button id="btn-flashcard" class="active" onclick="switchMode('flashcard')">📝 Flashcard</button>
-        <button id="btn-quiz" onclick="switchMode('quiz')">🎮 Quiz Game</button>
-        <button id="btn-runner" onclick="switchMode('runner')">🏃‍♂️ Time Runner</button>
-    </div>
-
-    <div id="flashcard-mode" class="mode-container active">
-        <p style="font-size: 14px; color: #777; margin-top: 0;">แตะที่การ์ดเพื่อดูคำแปล</p>
-        <div class="scene">
-            <div class="card" id="flashcard" onclick="flipCard()">
-                <div class="card-face card-front" id="fc-word">Word</div>
-                <div class="card-face card-back" id="fc-meaning">Meaning</div>
-            </div>
-        </div>
-        <div class="flashcard-controls">
-            <button onclick="prevCard()">⬅️ ย้อนกลับ</button>
-            <span id="fc-counter">1/30</span>
-            <button onclick="nextCard()">ถัดไป ➡️</button>
-        </div>
-    </div>
-
-    <div id="quiz-mode" class="mode-container">
-        <div class="score-board">คะแนนปัจจุบัน: <span id="score">0</span></div>
-        <div class="quiz-word" id="quiz-word">Word</div>
-        <div class="choices" id="choices-container"></div>
-        <button id="next-quiz" class="next-quiz-btn" onclick="nextQuiz()">ข้อถัดไป ➡️</button>
-    </div>
-
-    <div id="runner-mode" class="mode-container" style="position: relative;">
-        <div class="runner-header">
-            <div class="lives-board">ชีวิต: <span id="runner-lives">❤️❤️❤️</span></div>
-            <div class="runner-score-board">
-                คะแนน: <span id="runner-score">0</span>
-                <span id="runner-multiplier" class="multiplier-badge" style="display:none;">X2 🔥</span>
-            </div>
-        </div>
+    <div class="container-wrapper">
         
-        <div id="game-arena">
-            <div id="runner-character">🏃‍♂️</div>
-            <div id="obstacle-container"></div>
-            <div id="slow-mo-overlay">⚡ SLOW MOTION ⚡</div>
+      <div class="top-auth-bar">
+    <div id="auth-status-logged-out">
+        <button onclick="openAuthModal()" class="btn-trigger-auth">🔐 เข้าสู่ระบบ / สมัครสมาชิก</button>
+    </div>
+    <div id="auth-status-logged-in" style="display: none;">
+        <span class="user-welcome">👋 สวัสดี, <strong id="display-username">User</strong></span>
+        <button onclick="openVocabModal()" class="btn-trigger-vocab">➕ คลังคำศัพท์ของฉัน</button>
+        <button onclick="handleLogout()" class="btn-logout">ออกจากระบบ 🚪</button>
+    </div>
+</div>
+
+<h1>📚 TOEIC Vocab Game</h1>
+
+<div id="vocabModal" class="modal-overlay" onclick="closeVocabModal()">
+    <div class="modal-content modal-large" onclick="event.stopPropagation()">
+        <span class="close-modal-btn" onclick="closeVocabModal()">&times;</span>
+        
+        <h3 style="margin-top:0; color:var(--primary); font-size:20px;">➕ เพิ่มคำศัพท์ในชุดของฉัน</h3>
+        <div class="vocab-form-grid">
+            <input type="text" id="add-word" placeholder="คำศัพท์ภาษาอังกฤษ" autocomplete="off">
+            <input type="text" id="add-read" placeholder="คำอ่านภาษาไทย" autocomplete="off">
+            <select id="add-pos">
+                <option value="n.">n. (คำนาม)</option>
+                <option value="v.">v. (คำกริยา)</option>
+                <option value="adj.">adj. (คำคุณศัพท์)</option>
+                <option value="adv.">adv. (คำกริยาวิเศษณ์)</option>
+                <option value="n./v.">n./v. (ผสม)</option>
+            </select>
+            <input type="text" id="add-meaning" placeholder="คำแปลภาษาไทย" autocomplete="off">
+            <input type="text" id="add-example" class="full-width-input" placeholder="ประโยคตัวอย่างภาษาอังกฤษ" autocomplete="off">
+        </div>
+        <button onclick="addNewCustomWord()" class="btn-add-vocab" style="margin-bottom: 15px;">💾 บันทึกคำศัพท์ลงคลัง</button>
+        
+        <h4 class="sub-title-list">📋 รายการคำศัพท์ของฉัน (คลิกลบได้ที่นี่):</h4>
+        <div id="custom-words-manager-list" class="custom-words-list">
+            </div>
+    </div>
+</div>
+
+        <!-- แถบเลือกชุดคำศัพท์ -->
+        <div class="set-selector-container">
+            <label for="set-select" style="font-weight: bold;">หมวดศัพท์:</label>
+            <select id="set-select" class="set-select" onchange="changeVocabSet(this.value)">
+                <option value="set1">ชุดที่ 1: Marketing & Sales (30 คำ)</option>
+                <option value="set2">ชุดที่ 2: Finance & Accounting (30 คำ)</option>
+                <option value="set3">ชุดที่ 3: Corporate Management (30 คำ)</option>
+                <option value="set4">ชุดที่ 4: Human Resources (30 คำ)</option>
+                <option value="set5">ชุดที่ 5: Office Administration (30 คำ)</option>
+                <option value="set6">ชุดที่ 6: Purchasing & Logistics (30 คำ)</option>
+                <option value="set7">ชุดที่ 7: Manufacturing (30 คำ)</option>
+                <option value="set8">ชุดที่ 8: Travel & Transport (30 คำ)</option>
+                <option value="set9">ชุดที่ 9: Hospitality & Catering (30 คำ)</option>
+                <option value="set10">ชุดที่ 10: Health & Technology (30 คำ)</option>
+            </select>
         </div>
 
-        <div id="runner-quiz-box" style="display: none;">
-            <div class="timer-bar-container"><div id="timer-bar"></div></div>
-            <div class="quiz-word" id="runner-quiz-word">Word</div>
-            <div class="choices" id="runner-choices-container"></div>
+        <!-- ปุ่มสลับโหมดการเล่น -->
+        <div class="nav-buttons">
+            <button id="btn-flashcard" class="active" onclick="switchMode('flashcard')">📝 Flashcard</button>
+            <button id="btn-quiz" onclick="switchMode('quiz')">🎮 Quiz Game</button>
+            <button id="btn-runner" onclick="switchMode('runner')">🏃‍♂️ Time Runner</button>
         </div>
 
-        <div id="runner-gameover" class="gameover-overlay" style="display: none;">
-            <h2>🚫 GAME OVER 🚫</h2>
-            <p>คุณวิ่งไปได้ทั้งหมด: <strong style="font-size: 24px; color: var(--secondary);" id="final-runner-score">0</strong> คะแนน</p>
-            <button onclick="startRunnerGame()" style="background-color: var(--secondary); margin-top: 15px;">🔄 วิ่งใหม่อีกครั้ง</button>
+        <!-- [ส่วนแสดงผลโหมดการเล่น Flashcard / Quiz / Runner คงเดิมไว้ตามระบบของคุณ] -->
+        <div id="flashcard-mode" class="mode-container active">
+            <p style="font-size: 14px; color: #777; margin-top: 0;">แตะที่การ์ดเพื่อดูคำแปล</p>
+            <div class="scene">
+                <div class="card" id="flashcard" onclick="flipCard()">
+                    <div class="card-face card-front">
+                        <div>
+                            <div id="fc-word">Word</div>
+                            <div id="fc-read" class="word-read">/ คำอ่าน /</div>
+                        </div>
+                    </div>
+                    <div class="card-face card-back">
+                        <div>
+                            <div style="font-size:14px; margin-bottom:5px; opacity:0.8;" id="fc-pos">[pos]</div>
+                            <div id="fc-meaning">Meaning</div>
+                            <button class="info-trigger-btn" onclick="openExampleModal(event)">💡 ดูตัวอย่างประโยค</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flashcard-controls">
+                <button onclick="prevCard()">⬅ ย้อนกลับ</button>
+                <span id="fc-counter">1/30</span>
+                <button onclick="nextCard()">ถัดไป ➡️</button>
+            </div>
+        </div>
+
+        <div id="quiz-mode" class="mode-container">
+            <div class="score-board">คะแนนปัจจุบัน: <span id="score">0</span></div>
+            <div class="quiz-word-wrapper">
+                <div class="quiz-word" id="quiz-word">Word</div>
+                <div id="quiz-read" class="word-read-quiz"></div>
+            </div>
+            <div class="choices" id="choices-container"></div>
+            <div id="quiz-review-box" class="review-box" style="display:none;">
+                <p><strong>ประเภทคำ:</strong> <span id="quiz-pos"></span></p>
+                <button class="info-trigger-btn" onclick="openExampleModal(event)">💡 ดูตัวอย่างประโยค</button>
+            </div>
+            <button id="next-quiz" class="next-quiz-btn" onclick="nextQuiz()">ข้อถัดไป ➡️</button>
+        </div>
+
+        <div id="runner-mode" class="mode-container" style="position: relative;">
+            <div class="runner-header">
+                <div class="lives-board">ชีวิต: <span id="runner-lives">❤️❤️❤️</span></div>
+                <div class="runner-score-board">
+                    คะแนน: <span id="runner-score">0</span>
+                    <span id="runner-multiplier" class="multiplier-badge" style="display:none;">X2 🔥</span>
+                </div>
+            </div>
+            <div id="game-arena">
+                <div id="runner-character">🏃‍♂️</div>
+                <div id="obstacle-container"></div>
+                <div id="slow-mo-overlay">⚡ SLOW MOTION ⚡</div>
+            </div>
+            <div id="runner-quiz-box" style="display: none;">
+                <div class="timer-bar-container"><div id="timer-bar"></div></div>
+                <div class="quiz-word" id="runner-quiz-word">Word</div>
+                <div id="runner-hint" style="font-size:14px; margin-bottom:10px; font-weight:bold; color:var(--secondary);"></div >
+                <div class="choices" id="runner-choices-container"></div>
+            </div>
+            <div id="runner-gameover" class="gameover-overlay" style="display: none;">
+                <h2>🚫 GAME OVER 🚫</h2>
+                <p>คุณวิ่งไปได้ทั้งหมด: <strong style="font-size: 24px; color: var(--secondary);" id="final-runner-score">0</strong> คะแนน</p>
+                <button onclick="startRunnerGame()" style="background-color: var(--secondary); margin-top: 15px;">🔄 วิ่งใหม่อีกครั้ง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= กล่องหน้าต่างลอยล็อกอิน (Auth Modal Popup) ================= -->
+    <div id="authModal" class="modal-overlay" onclick="closeAuthModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-modal-btn" onclick="closeAuthModal()">&times;</span>
+            <h3 style="margin-top:0; color:var(--primary); font-size:22px; text-align:center;">🔐 เข้าสู่ระบบ / สมัครสมาชิก</h3>
+            <p style="font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:20px;">กรอกข้อมูลเพื่อเปิดใช้งานคลังคำศัพท์ส่วนตัวของคุณ</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="text" id="auth-username" placeholder="ชื่อผู้ใช้ (Username)" autocomplete="off" style="width:100%; padding:12px; border:1px solid var(--input-border); border-radius:6px; font-size:16px; background:var(--card-bg); color:var(--text-color); box-sizing:border-box;">
+                <input type="password" id="auth-password" placeholder="รหัสผ่าน (Password)" style="width:100%; padding:12px; border:1px solid var(--input-border); border-radius:6px; font-size:16px; background:var(--card-bg); color:var(--text-color); box-sizing:border-box;">
+            </div>
+            
+            <div class="auth-actions" style="margin-top: 20px;">
+                <button onclick="handleLogin()" class="btn-auth-primary">🔓 เข้าสู่ระบบ</button>
+                <button onclick="handleRegister()" class="btn-auth-secondary">📝 สมัครสมาชิก</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Modal แสดงตัวอย่างประโยค -->
+    <div id="exampleModal" class="modal-overlay" onclick="closeExampleModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <span class="close-modal-btn" onclick="closeExampleModal()">&times;</span>
+            <h3 id="modal-word" style="color:var(--primary); margin-top:0; font-size:26px;">Word</h3>
+            <p style="font-size:15px; color:var(--text-muted);"><strong>คำอ่าน:</strong> <span id="modal-read"></span> &nbsp;|&nbsp; <strong>ประเภท:</strong> <span id="modal-pos"></span></p>
+            <p style="font-size:16px; margin:15px 0;"><strong>ความหมาย:</strong> <span id="modal-meaning" style="color:var(--secondary); font-weight:bold;"></span></p>
+            <hr style="border:0; border-top:1px solid var(--input-border);">
+            <div class="example-sentence-box">
+                <p style="margin-top:0; font-weight:bold;">💡 ตัวอย่างประโยค (Example Sentence):</p>
+                <p id="modal-example" style="font-style: italic; line-height: 1.5; font-size:16px;"></p>
+            </div>
         </div>
     </div>
 
