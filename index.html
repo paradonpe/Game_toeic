@@ -26,14 +26,21 @@
 
 <h1>📚 TOEIC Vocab Game</h1>
 
+<!-- ค้นหาและแก้ไขเฉพาะโครงสร้างภายในหน้าต่างไอคอนเพิ่มคำศัพท์ (vocabModal) ดังนี้ครับ -->
 <div id="vocabModal" class="modal-overlay" onclick="closeVocabModal()">
     <div class="modal-content modal-large" onclick="event.stopPropagation()">
         <span class="close-modal-btn" onclick="closeVocabModal()">&times;</span>
         
         <h3 style="margin-top:0; color:var(--primary); font-size:20px;">➕ เพิ่มคำศัพท์ในชุดของฉัน</h3>
+        
         <div class="vocab-form-grid">
-            <input type="text" id="add-word" placeholder="คำศัพท์ภาษาอังกฤษ" autocomplete="off">
-            <input type="text" id="add-read" placeholder="คำอ่านภาษาไทย" autocomplete="off">
+            <!-- ปรับปรุงแถวแรกให้มีปุ่มกดดึงข้อมูลอัจฉริยะ ✨ -->
+            <div class="full-width-input smart-input-group">
+                <input type="text" id="add-word" placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ (เช่น Request)" autocomplete="off">
+                <button type="button" onclick="fetchSmartVocab()" class="btn-smart-fetch">✨ ดึงข้อมูลคำศัพท์</button>
+            </div>
+            
+            <input type="text" id="add-read" placeholder="คำอ่านภาษาไทย / เสียงอ่าน" autocomplete="off">
             <select id="add-pos">
                 <option value="n.">n. (คำนาม)</option>
                 <option value="v.">v. (คำกริยา)</option>
@@ -41,14 +48,14 @@
                 <option value="adv.">adv. (คำกริยาวิเศษณ์)</option>
                 <option value="n./v.">n./v. (ผสม)</option>
             </select>
-            <input type="text" id="add-meaning" placeholder="คำแปลภาษาไทย" autocomplete="off">
+            <input type="text" id="add-meaning" placeholder="คำแปลภาษาไทย" class="full-width-input" autocomplete="off">
             <input type="text" id="add-example" class="full-width-input" placeholder="ประโยคตัวอย่างภาษาอังกฤษ" autocomplete="off">
         </div>
+        
         <button onclick="addNewCustomWord()" class="btn-add-vocab" style="margin-bottom: 15px;">💾 บันทึกคำศัพท์ลงคลัง</button>
         
         <h4 class="sub-title-list">📋 รายการคำศัพท์ของฉัน (คลิกลบได้ที่นี่):</h4>
-        <div id="custom-words-manager-list" class="custom-words-list">
-            </div>
+        <div id="custom-words-manager-list" class="custom-words-list"></div>
     </div>
 </div>
 
@@ -177,6 +184,8 @@
             </div>
         </div>
     </div>
+
+    <div id="toast-container" class="toast-container"></div>
 
     <script src="vocab.js"></script>
     <script src="script.js"></script>

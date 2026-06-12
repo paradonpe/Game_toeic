@@ -83,7 +83,7 @@ h1 {
 
 button {
     background-color: var(--primary);
-    color: var(--white);
+    color: #ffffff;
     border: none;
     padding: 12px 16px;
     font-size: 14px;
@@ -155,7 +155,7 @@ button.active { background-color: var(--secondary); }
 .quiz-word { font-size: 28px; font-weight: bold; color: var(--primary); margin-bottom: 25px; word-break: break-word; }
 .score-board { font-size: 16px; font-weight: bold; margin-bottom: 15px; color: var(--secondary); }
 .choices { display: flex; flex-direction: column; gap: 12px; }
-.choice-btn { width: 100%; background-color: #f5f5f5; color: var(--text); padding: 14px; font-size: 15px; border-radius: 8px; text-align: center; }
+.choice-btn { width: 100%; background-color: #818cf8; color: var(--text); padding: 14px; font-size: 15px; border-radius: 8px; text-align: center; }
 .choice-btn:hover { background-color: #e8e8e8; }
 .choice-btn.correct { background-color: var(--correct) !important; color: white; }
 .choice-btn.wrong { background-color: var(--wrong) !important; color: white; }
@@ -366,7 +366,7 @@ button.active { background-color: var(--secondary); }
     gap: 10px;
 }
 .btn-auth-primary {
-    flex: 2;
+    flex: 1;
     background-color: var(--primary);
     color: white;
     border: none;
@@ -611,4 +611,145 @@ body.dark-mode .modal-content span {
 }
 body.dark-mode .modal-content p strong {
     color: var(--text-color);
+}
+/* ================= แถบกรอกคำศัพท์อัจฉริยะ (Smart Input Group Component) ================= */
+.smart-input-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+}
+.smart-input-group input {
+    flex: 1; /* ให้กล่องข้อความยืดพื้นที่ให้มากที่สุด */
+}
+.btn-smart-fetch {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap; /* ห้ามตัวหนังสือปุ่มตัดขึ้นบรรทัดใหม่ */
+    transition: background-color 0.2s;
+    box-shadow: var(--box-shadow);
+}
+.btn-smart-fetch:hover {
+    filter: brightness(1.1);
+}
+.btn-smart-fetch:active {
+    transform: scale(0.95);
+}
+
+/* ปรับปรุงแอนิเมชันตอนดึงข้อมูลให้ปุ่มดูน่ากดมากขึ้น */
+.btn-smart-fetch.loading {
+    background-color: var(--text-muted);
+    pointer-events: none;
+    opacity: 0.7;
+}
+/* ================= ปรับแต่ง Top Auth Bar ให้ยืดหยุ่นบนมือถือ (Responsive) ================= */
+.top-auth-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap; /* ป้องกันปุ่มเบียดกันจนทะลุจอในมือถือขนาดเล็ก */
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 15px auto;
+    padding: 5px 10px;
+    box-sizing: border-box;
+}
+
+@media (max-width: 400px) {
+    .top-auth-bar {
+        justify-content: center; /* จัดกึ่งกลางบนมือถือจิ๋ว */
+    }
+    .user-welcome {
+        width: 100%;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+}
+
+/* ================= ปรับปรุงโครงสร้าง Modal ให้รองรับการเลื่อนแนวตั้งบนมือถือ ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px); /* เพิ่มเอฟเฟกต์เบลอพื้นหลังสุดหรู */
+    display: none;
+    justify-content: center;
+    align-items: flex-start; /* เปลี่ยนเป็นเริ่มต้นจากด้านบนเพื่อให้เลื่อนสกรอลล์ได้ */
+    overflow-y: auto;       /* เปิดระบบเลื่อนหน้าจอในแนวตั้งกรณีพิมพ์คำศัพท์เยอะๆ */
+    padding: 30px 10px;     /* เว้นระยะบนล่างไม่ให้ชิดขอบเกินไป */
+    box-sizing: border-box;
+    z-index: 10000;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 24px;
+    border-radius: 16px; /* ขอบมนสวยงามสไตล์ iOS/Android สมัยใหม่ */
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3);
+    position: relative;
+    margin-top: auto;
+    margin-bottom: auto; /* จัดกึ่งกลางแนวตั้งอัตโนมัติหากหน้าจอเหลือพื้นที่ */
+    animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalSlideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* ================= 🌟 ระบบ Elegant Toast Notification CSS ================= */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%); /* จัดตำแหน่งกึ่งกลางหน้าจอด้านบนเพื่อสไตล์มือถือ */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 11000;
+    pointer-events: none; /* ยอมให้แตะทะลุผ่านได้ไม่รบกวนการเล่นเกม */
+    width: 90%;
+    max-width: 350px;
+}
+
+.toast {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.15), 0 4px 6px -4px rgb(0 0 0 / 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 5px solid var(--primary);
+    animation: toastSlideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), toastFadeOut 0.3s ease 2.7s forwards;
+}
+
+/* แยกสีประเภทการแจ้งเตือน */
+.toast.toast-success { border-left-color: var(--correct); }
+.toast.toast-error { border-left-color: var(--wrong); }
+.toast.toast-info { border-left-color: var(--primary); }
+.toast.toast-warning { border-left-color: #f59e0b; }
+
+@keyframes toastSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+@keyframes toastFadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; transform: translateY(-10px); }
 }

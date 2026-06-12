@@ -600,3 +600,249 @@ function updateAuthUI() {
         closeVocabModal();
     }
 }
+// ================= วางไว้ที่นอกสุดของไฟล์ script.js =================
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    // สร้างกล่องข้อความ
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    // เลือกไอคอนตามประเภท
+    let icon = '✨';
+    if (type === 'error') icon = '❌';
+    if (type === 'warning') icon = '⚠️';
+    if (type === 'info') icon = 'ℹ️';
+
+    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    container.appendChild(toast);
+
+    // ลบตัวเองออกจากหน้าจอหลังผ่านไป 3 วินาที
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}   
+// ================= 🧠 ระบบดึงข้อมูลคำศัพท์อัจฉริยะ (AI Smart Auto-Fill API) =================
+async function fetchSmartVocab() {
+    const wordInput = document.getElementById('add-word');
+    const fetchBtn = document.querySelector('.btn-smart-fetch');
+    const word = wordInput.value.trim();
+
+    // ป้องกันกรณีไม่ได้กรอกคำศัพท์แล้วกดปุ่ม
+    if (!word) { 
+        showToast('กรุณากรอกคำศัพท์ภาษาอังกฤษก่อนกดดึงข้อมูลครับ', 'warning'); 
+        return; 
+    }
+
+    // แสดงสถานะการโหลดและเปลี่ยนสีปุ่มชั่วคราว
+    showToast('กำลังค้นหาและวิเคราะห์คำศัพท์จากคลังข้อมูล...', 'info');
+    fetchBtn.classList.add('loading');
+    fetchBtn.innerText = '⏳ กำลังดึงข้อมูล...';
+
+    try {
+        // [จุดที่ 1] ดึงประเภทคำ ศัพท์สากล และประโยคตัวอย่างจาก Free Dictionary API
+        const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
+        
+        let detectedPos = 'n.'; // ค่าเริ่มต้นหากหาไม่เจอ
+        let detectedExample = '';
+        let detectedPhonetic = '';
+
+        if (dictResponse.ok) {
+            const dictData = await dictResponse.json();
+            if (dictData && dictData[0]) {
+                // ดึงสัญลักษณ์เสียงอ่านสากล (Phonetics) เช่น /rɪˈkwest/
+                detectedPhonetic = dictData[0].phonetic || (dictData[0].phonetics && dictData[0].phonetics[0]?.text) || '';
+                
+                if (dictData[0].meanings && dictData[0].meanings.length > 0) {
+                    const firstMeaning = dictData[0].meanings[0];
+                    
+                    // แปลงค่าประเภทคำให้อยู่ในฟอร์มย่อของระบบเกมคุณ
+                    const apiPos = firstMeaning.partOfSpeech;
+                    if (apiPos === 'noun') detectedPos = 'n.';
+                    else if (apiPos === 'verb') detectedPos = 'v.';
+                    else if (apiPos === 'adjective') detectedPos = 'adj.';
+                    else if (apiPos === 'adverb') detectedPos = 'adv.';
+
+                    // วนลูปค้นหาประโยคตัวอย่างแรกที่มีบันทึกไว้ในพจนานุกรม
+                    for (let meaningObj of dictData[0].meanings) {
+                        for (let def of meaningObj.definitions) {
+                            if (def.example) {
+                                detectedExample = def.example;
+                                break;
+                            }
+                        }
+                        if (detectedExample) break;
+                    }
+                }
+            }
+        }
+
+        // [จุดที่ 2] ดึงคำแปลภาษาไทยโดยเฉพาะผ่าน MyMemory API (ฟรี ไม่ต้องคีย์)
+        const translateResponse = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|th`);
+        let detectedMeaning = '';
+
+        if (translateResponse.ok) {
+            const transData = await translateResponse.json();
+            if (transData && transData.responseData) {
+                detectedMeaning = transData.responseData.translatedText;
+                
+                // เคลียร์ความสะอาดข้อความ (กรณี API ส่งคำแปลแบบเป็นประโยคยาวๆ หรือมีคำซ้ำ)
+                if(detectedMeaning.toLowerCase() === word.toLowerCase()) {
+                    detectedMeaning = ''; // แปลไม่ออก
+                }
+            }
+        }
+
+        // ================= [จุดที่ 3] ประกอบร่างและกรอกลงฟอร์มอัตโนมัติ =================
+        if (detectedMeaning) {
+            document.getElementById('add-meaning').value = detectedMeaning;
+        } else {
+            document.getElementById('add-meaning').value = '';
+            showToast('ค้นหาคำแปลไทยไม่พบ คุณสามารถพิมพ์เติมเองได้เลยครับ', 'warning');
+        }
+
+        document.getElementById('add-pos').value = detectedPos;
+        document.getElementById('add-example').value = detectedExample || `The manager approved the ${word} immediately.`; // สร้างประโยคจำลองถ้าไม่มีจากระบบ
+        
+        // ใส่เสียงอ่านภาษาอังกฤษให้ ถ้าคุณอยากเปลี่ยนเป็นคำอ่านไทย เช่น "รี-เควส" ก็จิ้มเปลี่ยนเองทับได้เลย
+        document.getElementById('add-read').value = detectedPhonetic || `/${word}/`;
+
+        showToast('🎯 ดึงข้อมูลอัจฉริยะเสร็จสิ้น! ตรวจสอบความถูกต้องแล้วกดบันทึกได้เลยครับ', 'success');
+
+    } catch (error) {
+        console.error("Smart Fetch Error:", error);
+        showToast('การเชื่อมต่อขัดข้อง ไม่สามารถดึงข้อมูลอัตโนมัติได้ในขณะนี้', 'error');
+    } finally {
+        // คืนค่าปุ่มให้กลับมาทำงานปกติ
+        fetchBtn.classList.remove('loading');
+        fetchBtn.innerText = '✨ ดึงข้อมูลคำศัพท์';
+    }
+}
+
+// ================= ปรับปรุงป๊อปอัปหน้าต่างลอยล็อกอิน (Auth Modals Setup) =================
+function openAuthModal() {
+    document.getElementById('authModal').style.display = 'flex';
+}
+function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
+}
+
+// ================= ปรับปรุงตรรกะระบบให้หันมาใช้งานระบบแจ้งเตือนตัวใหม่ =================
+
+function handleRegister() {
+    const uInput = document.getElementById('auth-username').value.trim();
+    const pInput = document.getElementById('auth-password').value.trim();
+
+    if (!uInput || !pInput) { 
+        showToast('กรุณากรอกข้อมูลให้ครบถ้วนครับ', 'warning'); 
+        return; 
+    }
+
+    const users = JSON.parse(localStorage.getItem('game_users') || '{}');
+    if (users[uInput]) { 
+        showToast('ชื่อผู้ใช้นี้ถูกใช้งานไปแล้ว', 'error'); 
+        return; 
+    }
+
+    users[uInput] = pInput;
+    localStorage.setItem('game_users', JSON.stringify(users));
+    showToast('สมัครสมาชิกสำเร็จ! สามารถเข้าสู่ระบบได้เลย', 'success');
+}
+
+function handleLogin() {
+    const uInput = document.getElementById('auth-username').value.trim();
+    const pInput = document.getElementById('auth-password').value.trim();
+    const users = JSON.parse(localStorage.getItem('game_users') || '{}');
+
+    if (users[uInput] && users[uInput] === pInput) {
+        currentUser = uInput;
+        localStorage.setItem('active_session', currentUser);
+        updateAuthUI();
+        loadCustomUserVocab();
+        closeAuthModal(); 
+        showToast(`ยินดีต้อนรับกลับมา คุณ ${currentUser} 🎉`, 'success');
+    } else {
+        showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+    }
+}
+
+function handleLogout() {
+    currentUser = null;
+    localStorage.removeItem('active_session');
+    
+    delete vocabSets[CUSTOM_SET_KEY];
+    removeCustomOptionFromDropdown();
+    
+    updateAuthUI();
+    changeVocabSet('set1'); 
+    document.getElementById('set-select').value = 'set1';
+    showToast('ออกจากระบบเรียบร้อยแล้ว', 'info');
+}
+
+function addNewCustomWord() {
+    if (!currentUser) { showToast('โปรดล็อกอินก่อนจัดการคลังคำศัพท์', 'warning'); return; }
+
+    const wordText = document.getElementById('add-word').value.trim();
+    const readText = document.getElementById('add-read').value.trim();
+    const posType = document.getElementById('add-pos').value;
+    const meaningText = document.getElementById('add-meaning').value.trim();
+    const exampleText = document.getElementById('add-example').value.trim();
+
+    if (!wordText || !meaningText || !readText) {
+        showToast('จำเป็นต้องกรอกคำศัพท์ คำอ่าน และคำแปลครับ', 'warning');
+        return;
+    }
+
+    const newVocabObj = {
+        word: wordText,
+        read: readText,
+        pos: posType,
+        meaning: meaningText,
+        example: exampleText || "No example sentence provided for this word."
+    };
+
+    const currentUserList = JSON.parse(localStorage.getItem(`vocab_${currentUser}`) || '[]');
+    currentUserList.push(newVocabObj);
+    localStorage.setItem(`vocab_${currentUser}`, JSON.stringify(currentUserList));
+
+    loadCustomUserVocab();
+
+    // ล้างฟิลด์ในฟอร์ม
+    document.getElementById('add-word').value = '';
+    document.getElementById('add-read').value = '';
+    document.getElementById('add-meaning').value = '';
+    document.getElementById('add-example').value = '';
+
+    if (currentSetKey === CUSTOM_SET_KEY) {
+        changeVocabSet(CUSTOM_SET_KEY);
+    }
+
+    showToast(`เพิ่มคำศัพท์ "${wordText}" ลงคลังส่วนตัวแล้ว!`);
+}
+
+function deleteCustomWord(index) {
+    if (!currentUser) return;
+    
+    const currentUserList = JSON.parse(localStorage.getItem(`vocab_${currentUser}`) || '[]');
+    const targetWord = currentUserList[index] ? currentUserList[index].word : '';
+
+    // สำหรับปุ่มลบสำคัญๆ ยังแนะนำให้ใช้ Confirm ของเบราว์เซอร์เพื่อกันการลั่นนิ้วไปโดนโดยไม่ตั้งใจครับ
+    if (!confirm(`คุณต้องการลบคำว่า "${targetWord}" ใช่หรือไม่?`)) return;
+
+    currentUserList.splice(index, 1);
+    localStorage.setItem(`vocab_${currentUser}`, JSON.stringify(currentUserList));
+
+    loadCustomUserVocab();
+
+    if (currentSetKey === CUSTOM_SET_KEY) {
+        if (currentUserList.length === 0) {
+            changeVocabSet('set1');
+            document.getElementById('set-select').value = 'set1';
+        } else {
+            changeVocabSet(CUSTOM_SET_KEY);
+            document.getElementById('set-select').value = CUSTOM_SET_KEY;
+        }
+    }
+    showToast(`ลบ "${targetWord}" ออกเรียบร้อย`, 'info');
+}
