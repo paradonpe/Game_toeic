@@ -8,61 +8,35 @@
 </head>
 <body>
 
-    <!-- ปุ่มลอยสลับ Dark/Light Mode -->
+    <button class="sidebar-toggle-btn" onclick="toggleSidebar()">☰ เมนูควบคุม</button>
+
     <button id="theme-toggle-btn" class="floating-theme-btn" onclick="toggleTheme()" aria-label="Toggle Theme">🌓</button>
 
-    <div class="container-wrapper">
-        
-      <div class="top-auth-bar">
-    <div id="auth-status-logged-out">
-        <button onclick="openAuthModal()" class="btn-trigger-auth">🔐 เข้าสู่ระบบ / สมัครสมาชิก</button>
-    </div>
-    <div id="auth-status-logged-in" style="display: none;">
-        <span class="user-welcome">👋 สวัสดี, <strong id="display-username">User</strong></span>
-        <button onclick="openVocabModal()" class="btn-trigger-vocab">➕ คลังคำศัพท์ของฉัน</button>
-        <button onclick="handleLogout()" class="btn-logout">ออกจากระบบ 🚪</button>
-    </div>
-</div>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
-<h1>📚 TOEIC Vocab Game</h1>
+    <div id="sidebar" class="sidebar">
+        <button class="sidebar-close-btn" onclick="toggleSidebar()">&times;</button>
+        
+        <h2 class="sidebar-title">⚙️ แผงควบคุม</h2>
+        <hr class="sidebar-divider">
 
-<!-- ค้นหาและแก้ไขเฉพาะโครงสร้างภายในหน้าต่างไอคอนเพิ่มคำศัพท์ (vocabModal) ดังนี้ครับ -->
-<div id="vocabModal" class="modal-overlay" onclick="closeVocabModal()">
-    <div class="modal-content modal-large" onclick="event.stopPropagation()">
-        <span class="close-modal-btn" onclick="closeVocabModal()">&times;</span>
-        
-        <h3 style="margin-top:0; color:var(--primary); font-size:20px;">➕ เพิ่มคำศัพท์ในชุดของฉัน</h3>
-        
-        <div class="vocab-form-grid">
-            <!-- ปรับปรุงแถวแรกให้มีปุ่มกดดึงข้อมูลอัจฉริยะ ✨ -->
-            <div class="full-width-input smart-input-group">
-                <input type="text" id="add-word" placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ (เช่น Request)" autocomplete="off">
-                <button type="button" onclick="fetchSmartVocab()" class="btn-smart-fetch">✨ ดึงข้อมูลคำศัพท์</button>
+        <div class="sidebar-section">
+            <label class="sidebar-label">👤 บัญชีผู้ใช้:</label>
+            <div id="auth-status-logged-out">
+                <button onclick="openAuthModal(); toggleSidebar();" class="btn-sidebar-primary">🔐 เข้าสู่ระบบ / สมัครสมาชิก</button>
             </div>
-            
-            <input type="text" id="add-read" placeholder="คำอ่านภาษาไทย / เสียงอ่าน" autocomplete="off">
-            <select id="add-pos">
-                <option value="n.">n. (คำนาม)</option>
-                <option value="v.">v. (คำกริยา)</option>
-                <option value="adj.">adj. (คำคุณศัพท์)</option>
-                <option value="adv.">adv. (คำกริยาวิเศษณ์)</option>
-                <option value="n./v.">n./v. (ผสม)</option>
-            </select>
-            <input type="text" id="add-meaning" placeholder="คำแปลภาษาไทย" class="full-width-input" autocomplete="off">
-            <input type="text" id="add-example" class="full-width-input" placeholder="ประโยคตัวอย่างภาษาอังกฤษ" autocomplete="off">
+            <div id="auth-status-logged-in" style="display: none;">
+                <p class="sidebar-user-welcome">👋 สวัสดี, <strong id="display-username">User</strong></p>
+                <button onclick="openVocabModal(); toggleSidebar();" class="btn-sidebar-success">➕ คลังคำศัพท์ของฉัน</button>
+                <button onclick="handleLogout(); toggleSidebar();" class="btn-logout" style="width: 100%; margin-top: 5px;">ออกจากระบบ 🚪</button>
+            </div>
         </div>
-        
-        <button onclick="addNewCustomWord()" class="btn-add-vocab" style="margin-bottom: 15px;">💾 บันทึกคำศัพท์ลงคลัง</button>
-        
-        <h4 class="sub-title-list">📋 รายการคำศัพท์ของฉัน (คลิกลบได้ที่นี่):</h4>
-        <div id="custom-words-manager-list" class="custom-words-list"></div>
-    </div>
-</div>
 
-        <!-- แถบเลือกชุดคำศัพท์ -->
-        <div class="set-selector-container">
-            <label for="set-select" style="font-weight: bold;">หมวดศัพท์:</label>
-            <select id="set-select" class="set-select" onchange="changeVocabSet(this.value)">
+        <hr class="sidebar-divider">
+
+        <div class="sidebar-section">
+            <label class="sidebar-label" for="set-select">📁 เลือกชุดคำศัพท์:</label>
+            <select id="set-select" class="sidebar-select" onchange="changeVocabSet(this.value); toggleSidebar();">
                 <option value="set1">ชุดที่ 1: Marketing & Sales (30 คำ)</option>
                 <option value="set2">ชุดที่ 2: Finance & Accounting (30 คำ)</option>
                 <option value="set3">ชุดที่ 3: Corporate Management (30 คำ)</option>
@@ -76,14 +50,23 @@
             </select>
         </div>
 
-        <!-- ปุ่มสลับโหมดการเล่น -->
-        <div class="nav-buttons">
-            <button id="btn-flashcard" class="active" onclick="switchMode('flashcard')">📝 Flashcard</button>
-            <button id="btn-quiz" onclick="switchMode('quiz')">🎮 Quiz Game</button>
-            <button id="btn-runner" onclick="switchMode('runner')">🏃‍♂️ Time Runner</button>
-        </div>
+        <hr class="sidebar-divider">
 
-        <!-- [ส่วนแสดงผลโหมดการเล่น Flashcard / Quiz / Runner คงเดิมไว้ตามระบบของคุณ] -->
+        <div class="sidebar-section">
+            <label class="sidebar-label">🎮 โหมดการเล่นคลังคำศัพท์:</label>
+            <div class="sidebar-mode-grid">
+                <button id="btn-flashcard" class="btn-sidebar-mode active" onclick="switchMode('flashcard'); toggleSidebar();">🃏 Flashcard</button>
+                <button id="btn-quiz" class="btn-sidebar-mode" onclick="switchMode('quiz'); toggleSidebar();">📝 Quiz Game</button>
+                <button id="btn-runner" class="btn-sidebar-mode" onclick="switchMode('runner'); toggleSidebar();">🏃‍♂️ Time Runner</button>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="container-wrapper" style="margin-top: 40px;">
+        
+        <h1>📚 TOEIC Vocab Game</h1>
+
         <div id="flashcard-mode" class="mode-container active">
             <p style="font-size: 14px; color: #777; margin-top: 0;">แตะที่การ์ดเพื่อดูคำแปล</p>
             <div class="scene">
@@ -140,7 +123,7 @@
             <div id="runner-quiz-box" style="display: none;">
                 <div class="timer-bar-container"><div id="timer-bar"></div></div>
                 <div class="quiz-word" id="runner-quiz-word">Word</div>
-                <div id="runner-hint" style="font-size:14px; margin-bottom:10px; font-weight:bold; color:var(--secondary);"></div >
+                <div id="runner-hint" style="font-size:14px; margin-bottom:10px; font-weight:bold; color:var(--secondary);"></div>
                 <div class="choices" id="runner-choices-container"></div>
             </div>
             <div id="runner-gameover" class="gameover-overlay" style="display: none;">
@@ -151,7 +134,38 @@
         </div>
     </div>
 
-    <!-- ================= กล่องหน้าต่างลอยล็อกอิน (Auth Modal Popup) ================= -->
+
+    <div id="vocabModal" class="modal-overlay" onclick="closeVocabModal()">
+        <div class="modal-content modal-large" onclick="event.stopPropagation()">
+            <span class="close-modal-btn" onclick="closeVocabModal()">&times;</span>
+            
+            <h3 style="margin-top:0; color:var(--primary); font-size:20px;">➕ เพิ่มคำศัพท์ในชุดของฉัน</h3>
+            
+            <div class="vocab-form-grid">
+                <div class="full-width-input smart-input-group">
+                    <input type="text" id="add-word" placeholder="พิมพ์คำศัพท์ภาษาอังกฤษ (เช่น Request)" autocomplete="off">
+                    <button type="button" onclick="fetchSmartVocab()" class="btn-smart-fetch">✨ ดึงข้อมูลคำศัพท์</button>
+                </div>
+                
+                <input type="text" id="add-read" placeholder="คำอ่านภาษาไทย / เสียงอ่าน" autocomplete="off">
+                <select id="add-pos">
+                    <option value="n.">n. (คำนาม)</option>
+                    <option value="v.">v. (คำกริยา)</option>
+                    <option value="adj.">adj. (คำคุณศัพท์)</option>
+                    <option value="adv.">adv. (คำกริยาวิเศษณ์)</option>
+                    <option value="n./v.">n./v. (ผสม)</option>
+                </select>
+                <input type="text" id="add-meaning" placeholder="คำแปลภาษาไทย" class="full-width-input" autocomplete="off">
+                <input type="text" id="add-example" class="full-width-input" placeholder="ประโยคตัวอย่างภาษาอังกฤษ" autocomplete="off">
+            </div>
+            
+            <button onclick="addNewCustomWord()" class="btn-add-vocab" style="margin-bottom: 15px;">💾 บันทึกคำศัพท์ลงคลัง</button>
+            
+            <h4 class="sub-title-list">📋 รายการคำศัพท์ของฉัน (คลิกลบได้ที่นี่):</h4>
+            <div id="custom-words-manager-list" class="custom-words-list"></div>
+        </div>
+    </div>
+
     <div id="authModal" class="modal-overlay" onclick="closeAuthModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <span class="close-modal-btn" onclick="closeAuthModal()">&times;</span>
@@ -170,7 +184,6 @@
         </div>
     </div>
 
-    <!-- Global Modal แสดงตัวอย่างประโยค -->
     <div id="exampleModal" class="modal-overlay" onclick="closeExampleModal()">
         <div class="modal-content" onclick="event.stopPropagation()">
             <span class="close-modal-btn" onclick="closeExampleModal()">&times;</span>

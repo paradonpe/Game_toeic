@@ -260,6 +260,7 @@ button.active { background-color: var(--secondary); }
 }
 
 .review-box {
+    color: #000000;
     background-color: #f8fafc;
     border: 1px dashed #cbd5e1;
     border-radius: 8px;
@@ -752,4 +753,205 @@ body.dark-mode .modal-content p strong {
 @keyframes toastFadeOut {
     from { opacity: 1; }
     to { opacity: 0; transform: translateY(-10px); }
+}
+/* ================= 🛠️ ล็อคหน้าจอคงที่ ป้องกันหน้าจอกระตุกขยับตอนเปลี่ยนข้อ ================= */
+
+/* ล็อคพื้นที่กล่องคำศัพท์ในหน้าเกมปกติ */
+.quiz-word-wrapper {
+    min-height: 90px; /* ล็อคความสูงให้พอดีกับคำศัพท์ ไม่ว่าจะสั้นหรือยาว หน้าจอจะไม่ยุบ */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ล็อคพื้นที่กล่องตัวเลือกทั้งหมด */
+.choices {
+    min-height: 210px; /* ล็อคความสูงขั้นต่ำของโซนปุ่มกดทั้งหมด หน้าจอจะนิ่งสนิทเมื่อก้าวไปข้อถัดไป */
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+}
+
+/* สำหรับโหมด Runner (จับเวลา) ล็อคพื้นที่ปุ่มกดด้านล่างให้คงที่เช่นกัน */
+#runner-choices-container {
+    min-height: 160px;
+}
+
+body {
+    overscroll-behavior-y: contain; 
+}
+
+
+/* ================= 🎮 2. เอฟเฟกต์ป๊อปอัปแต้มลอยตัวสำหรับโหมดจับเวลา ================= */
+.floating-score-feedback {
+    position: absolute;
+    top: 40%; /* โผล่ขึ้นมาตรงกลางของลานวิ่ง Arena */
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(16, 185, 129, 0.95); /* สีเขียวสดใสแต่โปร่งแสงสไตล์โมเดิร์น */
+    color: #ffffff;
+    padding: 10px 22px;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+    pointer-events: none; /* สำคัญมาก: ยอมให้ผู้เล่นเอานิ้วจิ้มทะลุผ่านได้ทันที ไม่บังและไม่ขัดจังหวะการเล่น */
+    z-index: 999;
+    letter-spacing: 0.5px;
+    
+    /* สั่งให้เล่นแอนิเมชันลอยขึ้นและค่อยๆ จางหายไปในเวลา 0.8 วินาที */
+    animation: floatUpAndOut 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes floatUpAndOut {
+    0% { 
+        transform: translate(-50%, -20%) scale(0.6); 
+        opacity: 0; 
+    }
+    30% { 
+        transform: translate(-50%, -50%) scale(1.1); /* ขยายใหญ่ขึ้นเล็กน้อยเพื่อความสะใจตอนตอบถูก */
+        opacity: 1; 
+    }
+    100% { 
+        transform: translate(-50%, -110%) scale(1); /* ลอยสูงขึ้นด้านบน */
+        opacity: 0; 
+    }
+}
+/* ================= 🎛️ ระบบแถบเมนูสไลด์ข้างจอ (Sidebar Overlay UI) ================= */
+
+/* ปุ่มกดเปิดแฮมเบอร์เกอร์ลอยตัว */
+.sidebar-toggle-btn {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    z-index: 900;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    transition: transform 0.1s;
+}
+.sidebar-toggle-btn:active { transform: scale(0.95); }
+
+/* ม่านดำโปร่งแสงด้านหลังซับสายตา */
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 10040;
+    display: none; /* ซ่อนไว้เริ่มต้น */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.sidebar-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* ตัวกล่องแถบสไลด์ */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: -290px; /* ซ่อนไว้ฝั่งซ้ายของขอบจอ */
+    width: 280px;
+    height: 100%;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    box-shadow: 5px 0 25px rgba(0, 0, 0, 0.25);
+    z-index: 10050; /* ลอยอยู่เหนือทุกสิ่ง */
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); /* เอฟเฟกต์สไลด์สมูทระดับ iOS */
+    padding: 25px 20px;
+    box-sizing: border-box;
+    overflow-y: auto; /* เลื่อนสกรอลล์ในเมนูได้ถ้าจอมือถือเล็กสั้น */
+}
+/* คลาสเปิดใช้งาน (จะโดนเพิ่มด้วย JS) */
+.sidebar.active {
+    transform: translateX(290px); /* สไลด์ดันออกมาทางขวา */
+}
+
+/* ปุ่มปิดกากบาทในแถบ */
+.sidebar-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 28px;
+    cursor: pointer;
+}
+
+/* สไตล์องค์ประกอบย่อยในแถบเมนู */
+.sidebar-title { margin: 0 0 10px 0; font-size: 20px; color: var(--primary); }
+.sidebar-divider { border: 0; height: 1px; background: rgba(128,128,128,0.2); margin: 15px 0; }
+.sidebar-section { display: flex; flex-direction: column; gap: 10px; }
+.sidebar-label { font-size: 13px; font-weight: bold; color: var(--text-muted); margin-bottom: 2px; }
+.sidebar-user-welcome { margin: 5px 0; font-size: 15px; }
+
+/* ปรับแต่งปุ่มกดภายในแถบเมนูให้เต็มความกว้าง */
+.btn-sidebar-primary, .btn-sidebar-success, .btn-sidebar-danger, .sidebar-select, .btn-sidebar-mode {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+}
+.btn-sidebar-primary { background-color: var(--primary); color: white; }
+.btn-sidebar-success { background-color: var(--correct); color: white; }
+.btn-sidebar-danger { background-color: var(--wrong); color: white; }
+.sidebar-select { 
+    background-color: rgba(128, 128, 128, 0.1); 
+    color: var(--text-color); 
+    border: 1px solid rgba(128,128,128,0.2);
+}
+
+/* จัดปุ่มโหมดให้เรียงลงมาสวยๆ */
+.sidebar-mode-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+/* ================= 🎮 แก้ไขปุ่มเลือกโหมดในแถบสไลด์ข้าง ================= */
+.btn-sidebar-mode {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(128, 128, 128, 0.2);
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: left;
+    padding-left: 15px;
+    
+    /* 1. ตั้งค่าเริ่มต้นตอนปกติให้เป็นสีขาว (ไม่ค้างเป็นสีแดงแล้ว) */
+    background-color: #ffffff; 
+    color: #2c3e50; 
+    transition: all 0.2s ease;
+}
+
+/* เอฟเฟกต์ตอนเอานิ้วแตะหรือเมาส์ชี้ */
+.btn-sidebar-mode:hover {
+    background-color: #f8f9fa;
+}
+
+/* 2. เฉพาะปุ่มที่ถูกเลือก (มีคลาส .active) เท่านั้น ถึงจะเปลี่ยนเป็นสีแดงสดใส */
+.btn-sidebar-mode.active {
+    background-color: #ff4757; /* สีแดงสไตล์โมเดิร์นตามภาพของคุณ */
+    color: #ffffff !important;   /* เปลี่ยนตัวหนังสือเป็นสีขาวให้อ่านง่าย */
+    border-color: #ff4757;
 }

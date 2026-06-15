@@ -50,16 +50,43 @@ function changeVocabSet(setKey) {
     }
 }
 
-// --- ระบบสลับโหมดการเล่น ---
 function switchMode(mode) {
+    // =========================================================
+    // 🛑 1. ระบบตรวจสอบความปลอดภัย (เช็กเฉพาะชุดศัพท์ของฉันตาม CUSTOM_SET_KEY)
+    // =========================================================
+    const selectElem = document.getElementById('set-select');
+    if (selectElem) {
+        const currentSelectedSet = selectElem.value;
+
+        // เช็กว่าตรงกับ Key ชุดศัพท์ของฉันหรือไม่
+        if (currentSelectedSet === CUSTOM_SET_KEY) {
+            
+            // ดึงจำนวนคำศัพท์จากโครงสร้างข้อมูลจริงของคุณ
+            const myWordsCount = (typeof vocabSets !== 'undefined' && vocabSets[CUSTOM_SET_KEY]) 
+                                 ? vocabSets[CUSTOM_SET_KEY].length 
+                                 : 0;
+            
+            // ถ้าคำศัพท์มีไม่ถึง 4 คำ และกำลังจะเข้าโหมด Quiz หรือ Runner ให้บล็อกทันที
+            if ((mode === 'quiz' || mode === 'runner') && myWordsCount < 4) {
+                showToast('⚠️ คำศัพท์ในคลังของคุณมีน้อยเกินไป (ต้องมีอย่างน้อย 4 คำ) กรุณาเพิ่มศัพท์ก่อนเล่นครับ', 'warning');
+                return; // สั่งดีดตัวกลับ ไม่เปลี่ยนโหมดให้หน้าจอค้าง
+            }
+        }
+    }
+
+    // =========================================================
+    // 🔄 2. เคลียร์สถานะเกมและสลับโหมดตามปกติ (โค้ดดั้งเดิมของคุณ)
+    // =========================================================
     currentMode = mode;
     clearInterval(runnerLoopInterval);
     clearInterval(runnerTimerInterval);
     isSlowMo = false;
     isRunnerPlaying = false;
 
-    document.querySelectorAll('.mode-container, .nav-buttons button').forEach(el => el.classList.remove('active'));
+    // ล้างสีปุ่มแดงค้าง และปิดหน้าจอโหมดเก่า (.btn-sidebar-mode)
+    document.querySelectorAll('.mode-container, .btn-sidebar-mode').forEach(el => el.classList.remove('active'));
 
+    // เปิดหน้าจอโหมดที่เลือก และไฮไลต์สีแดงให้ถูกปุ่ม
     if (mode === 'flashcard') {
         document.getElementById('flashcard-mode').classList.add('active');
         document.getElementById('btn-flashcard').classList.add('active');
@@ -76,7 +103,6 @@ function switchMode(mode) {
         startRunnerGame();
     }
 }
-
 // --- โหมด Flashcard ---
 function loadFlashcard() {
     const card = document.getElementById('flashcard');
@@ -248,8 +274,16 @@ function checkRunnerAnswer(selectedMeaning) {
             document.getElementById('runner-multiplier').style.display = 'inline-block';
         }
 
-        runnerScore += 10 * multiplier;
+        // 1. คำนวณคะแนนที่ได้ในรอบนี้
+        const pointsEarned = 10 * multiplier;
+
+        // 2. บวกคะแนนและอัปเดตบนหน้าจอหลัก
+        runnerScore += pointsEarned;
         document.getElementById('runner-score').innerText = runnerScore;
+        
+        // 🚀 3. เรียกใช้ป๊อปอัปเอฟเฟกต์แต้มลอยตัวโชว์คะแนนแบบเรียลไทม์
+        showRunnerScoreFeedback(pointsEarned);
+
         resumeRunnerGame();
     } else {
         handleRunnerHit();
@@ -845,4 +879,31 @@ function deleteCustomWord(index) {
         }
     }
     showToast(`ลบ "${targetWord}" ออกเรียบร้อย`, 'info');
+}
+// ================= 🎯 ฟังก์ชันสร้างป๊อปอัปคะแนนลอยตัว (Non-blocking Game Popup) =================
+function showRunnerScoreFeedback(points) {
+    const arena = document.getElementById('game-arena');
+    if (!arena) return;
+
+    // สร้าง Element ตัวป๊อปอัปแจ้งเตือนคะแนน
+    const feedback = document.createElement('div');
+    feedback.className = 'floating-score-feedback';
+    feedback.innerHTML = `🔥 ถูกต้อง! +${points} แต้ม`;
+
+    // ยัดเข้าไปในลานวิ่งของเกม
+    arena.appendChild(feedback);
+
+    // ทำลายตัวเองทิ้งเมื่อแอนิเมชันจบลง (800 มิลลิวินาที) เพื่อป้องกันไม่ให้โค้ดขยะสะสมในหน้าจอ
+    setTimeout(() => {
+        feedback.remove();
+    }, 800);
+}
+// ================= 📱 ฟังก์ชันสลับการเปิด/ปิด แถบเมนูด้านข้าง (Sidebar Toggle) =================
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    // ใช้คลาส .active ในการควบคุมการสไลด์และเปิดม่านหลัง
+    sidebar.classList.toggle('active');
+    overlay.classList.toggle('active');
 }
