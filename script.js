@@ -685,8 +685,17 @@ async function fetchSmartVocab() {
         if (dictResponse.ok) {
             const dictData = await dictResponse.json();
             if (dictData && dictData[0]) {
-                // ดึงสัญลักษณ์เสียงอ่านสากล (Phonetics) เช่น /rɪˈkwest/
-                detectedPhonetic = dictData[0].phonetic || (dictData[0].phonetics && dictData[0].phonetics[0]?.text) || '';
+                
+                // 🔍 [แก้ไขบั๊กคำอ่านมั่ว] วนลูปหาตัวที่มีข้อความคำอ่านสากล (Phonetics) ที่ไม่ว่างจริงๆ
+                if (dictData[0].phonetic) {
+                    detectedPhonetic = dictData[0].phonetic;
+                } else if (dictData[0].phonetics && dictData[0].phonetics.length > 0) {
+                    // กรองเอาเฉพาะออบเจกต์ที่มีฟิลด์ text และไม่เป็นค่าว่าง
+                    const validPhoneticObj = dictData[0].phonetics.find(p => p.text && p.text.trim() !== "");
+                    if (validPhoneticObj) {
+                        detectedPhonetic = validPhoneticObj.text;
+                    }
+                }
                 
                 if (dictData[0].meanings && dictData[0].meanings.length > 0) {
                     const firstMeaning = dictData[0].meanings[0];
@@ -739,7 +748,7 @@ async function fetchSmartVocab() {
         document.getElementById('add-pos').value = detectedPos;
         document.getElementById('add-example').value = detectedExample || `The manager approved the ${word} immediately.`; // สร้างประโยคจำลองถ้าไม่มีจากระบบ
         
-        // ใส่เสียงอ่านภาษาอังกฤษให้ ถ้าคุณอยากเปลี่ยนเป็นคำอ่านไทย เช่น "รี-เควส" ก็จิ้มเปลี่ยนเองทับได้เลย
+        // กรอกคำอ่านสากลที่สแกนเจออย่างถูกต้อง หากหาไม่เจอจริงๆ ถึงจะใช้ฟอลแบ็กสแลชครอบ
         document.getElementById('add-read').value = detectedPhonetic || `/${word}/`;
 
         showToast('🎯 ดึงข้อมูลอัจฉริยะเสร็จสิ้น! ตรวจสอบความถูกต้องแล้วกดบันทึกได้เลยครับ', 'success');
