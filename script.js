@@ -634,94 +634,161 @@ function updateAuthUI() {
         closeVocabModal();
     }
 }
+// ================= 🗣️ AI-Powered IPA to Thai Karaoke Engine =================
 function convertIpaToThai(ipa) {
     if (!ipa) return "";
     
-    let th = ipa.toLowerCase();
+    // 1. ทำความสะอาดข้อความ IPA (ลบจุด สแลช เสียงหนัก)
+    let tempIpa = ipa.toLowerCase().replace(/[\/ˈˌ. ]/g, "");
     
-    // 1. ล้างเครื่องหมายบอกเสียงเน้น (Stress) และจุดแบ่งพยางค์ในระบบ IPA ออกก่อน
-    th = th.replace(/[\/ˈˌ.]/g, "");
-    
-    // 2. จัดการคำลงท้ายยอดฮิต (Suffixes) ให้เป็นระบบตัวสะกดไทยที่ถูกต้อง (แก้บั๊กการันต์มั่ว)
-    th = th.replace(/ʃən$/g, "ชัน"); // เช่น action -> แอคชัน
-    th = th.replace(/st$/g, "สต์");  // เช่น test -> เทสต์
-    th = th.replace(/ts$/g, "ตส์");  // เช่น cats -> แคตส์
-    th = th.replace(/kt$/g, "กต์");  // เช่น act -> แอคต์
-    th = th.replace(/nd$/g, "นด์");  // เช่น and -> แอนด์
-    th = th.replace(/nt$/g, "นต์");  // เช่น want -> วอนต์
-    th = th.replace(/s$/g, "ส");    // ✨ แก้บั๊ก bus -> บัส (ไม่ใช่ บัส์)
-    th = th.replace(/z$/g, "ซ");    // เช่น quiz -> ควิซ
-    
-    // ตัวระบุกลุ่มพยัญชนะสากล IPA เพื่อใช้วิเคราะห์เสียงพยัญชนะต้น
-    const cPattern = "(tʃ|dʒ|p|b|t|d|k|g|\u0261|f|v|s|z|ʃ|ʒ|h|m|n|ŋ|r|l|w|j|θ|ð)";
-    
-    // คลังรหัสสระคู่และสระเดี่ยว (เรียงลำดับตัวยาวไปตัวสั้นป้องกันการแย่ง Match)
-    const vowelMap = [
-        { ipa: "eɪ", thai: "เ", ind: "เอ" },
-        { ipa: "aɪ", thai: "ไ", ind: "ไอ" },
-        { ipa: "oʊ", thai: "โ", ind: "โอ" },
-        { ipa: "əʊ", thai: "โ", ind: "โอ" },
-        { ipa: "ɔɪ", thai: "ออย", ind: "ออย" },
-        { ipa: "aʊ", thai: "าว", ind: "อาว" },
-        { ipa: "ɪŋ", thai: "ิง", ind: "อิง" },
-        { ipa: "eə", thai: "แอร์", ind: "แอร์" },
-        { ipa: "ɪə", thai: "เอีย", ind: "เอีย" },
-        { ipa: "ʊə", thai: "อัวร์", ind: "อัวร์" },
-        { ipa: "ər", thai: "อร์", ind: "เออร์" },
-        { ipa: "ɜː", thai: "อร์", ind: "เออร์" },
-        { ipa: "æ", thai: "แ", ind: "แอ" },
-        { ipa: "e", thai: "เ", ind: "เอ" },
-        { ipa: "ɑː", thai: "า", ind: "อา" },
-        { ipa: "ɑ", thai: "า", ind: "อา" },
-        { ipa: "iː", thai: "ี", ind: "อี" },
-        { ipa: "i", thai: "ี", ind: "อี" },
-        { ipa: "ɪ", thai: "ิ", ind: "อิ" },
-        { ipa: "ɔː", thai: "อ", ind: "ออ" },
-        { ipa: "ɔ", thai: "อ", ind: "ออ" },
-        { ipa: "ɒ", thai: "อ", ind: "ออ" },
-        { ipa: "uː", thai: "ู", ind: "อู" },
-        { ipa: "u", thai: "ู", ind: "อู" },
-        { ipa: "ʊ", thai: "ุ", ind: "อุ" },
-        { ipa: "ʌ", thai: "ะ", ind: "อะ" },
-        { ipa: "ə", thai: "ะ", ind: "อะ" }
+    // 2. คลังข้อมูลหน่วยเสียง (Phonemes) สั่งสอนให้ระบบรู้จักพยัญชนะและสระ
+    const phonemes = [
+        // พยัญชนะคู่และสระผสม (ต้องอยู่บนสุดเพื่อให้ตรวจจับก่อน)
+        { i: "tʃ", t: "ช", type: "C" }, { i: "dʒ", t: "จ", type: "C" },
+        { i: "aʊ", t: "-าว", type: "V", inherent_coda: true },
+        { i: "ɔɪ", t: "-อย", type: "V", inherent_coda: true },
+        { i: "eɪ", t: "เ-", type: "V", inherent_coda: false },
+        { i: "aɪ", t: "ไ-", type: "V", inherent_coda: false },
+        { i: "oʊ", t: "โ-", type: "V", inherent_coda: false },
+        { i: "əʊ", t: "โ-", type: "V", inherent_coda: false },
+        { i: "ɪə", t: "เ-ีย", type: "V", inherent_coda: false },
+        { i: "eə", t: "แ-ร์", type: "V", inherent_coda: true },
+        { i: "ʊə", t: "-ัว", type: "V", inherent_coda: false },
+        { i: "ɑː", t: "-า", type: "V", inherent_coda: false },
+        { i: "iː", t: "-ี", type: "V", inherent_coda: false },
+        { i: "ɔː", t: "-อ", type: "V", inherent_coda: false },
+        { i: "uː", t: "-ู", type: "V", inherent_coda: false },
+        { i: "ɜː", t: "เ-อ", type: "V", inherent_coda: false },
+        { i: "ər", t: "เ-อร์", type: "V", inherent_coda: true },
+        // สระเดี่ยว
+        { i: "æ", t: "แ-", type: "V", inherent_coda: false },
+        { i: "ɑ", t: "-า", type: "V", inherent_coda: false },
+        { i: "ɒ", t: "-อ", type: "V", inherent_coda: false },
+        { i: "ɔ", t: "-อ", type: "V", inherent_coda: false },
+        { i: "ɪ", t: "-ิ", type: "V", inherent_coda: false },
+        { i: "i", t: "-ิ", type: "V", inherent_coda: false },
+        { i: "e", t: "เ-", type: "V", inherent_coda: false },
+        { i: "ɛ", t: "เ-", type: "V", inherent_coda: false },
+        { i: "ʊ", t: "-ุ", type: "V", inherent_coda: false },
+        { i: "u", t: "-ุ", type: "V", inherent_coda: false },
+        { i: "ʌ", t: "FLEX", type: "V", inherent_coda: false }, // สระแปลงรูป อะ/ไม้หันอากาศ
+        { i: "ə", t: "FLEX", type: "V", inherent_coda: false },
+        // พยัญชนะเดี่ยว
+        { i: "θ", t: "ธ", type: "C" }, { i: "ð", t: "ด", type: "C" },
+        { i: "ʃ", t: "ช", type: "C" }, { i: "ʒ", t: "ช", type: "C" },
+        { i: "ŋ", t: "ง", type: "C" }, { i: "p", t: "พ", type: "C" },
+        { i: "b", t: "บ", type: "C" }, { i: "t", t: "ท", type: "C" },
+        { i: "d", t: "ด", type: "C" }, { i: "k", t: "ค", type: "C" },
+        { i: "g", t: "ก", type: "C" }, { i: "ɡ", t: "ก", type: "C" },
+        { i: "f", t: "ฟ", type: "C" }, { i: "v", t: "ว", t_coda: "ฟ", type: "C" }, // v ต้นคำ=ว, ท้ายคำ=ฟ
+        { i: "s", t: "ส", type: "C" }, { i: "z", t: "ซ", type: "C" },
+        { i: "h", t: "ฮ", type: "C" }, { i: "m", t: "ม", type: "C" },
+        { i: "n", t: "น", type: "C" }, { i: "l", t: "ล", type: "C" },
+        { i: "r", t: "ร", type: "C" }, { i: "ɹ", t: "ร", type: "C" },
+        { i: "j", t: "ย", type: "C" }, { i: "w", t: "ว", type: "C" }
     ];
+
+    // 3. Tokenizer: หั่น IPA ออกเป็นชิ้นๆ (ตัวอักษร)
+    let tokens = [];
+    while (tempIpa.length > 0) {
+        let matched = false;
+        for (let p of phonemes) {
+            if (tempIpa.startsWith(p.i)) {
+                tokens.push({...p});
+                tempIpa = tempIpa.substring(p.i.length);
+                matched = true; break;
+            }
+        }
+        if (!matched) tempIpa = tempIpa.substring(1);
+    }
+
+    // 4. Syllable Parser: AI วิเคราะห์พยางค์ (จัดกลุ่ม พยัญชนะต้น-สระ-ตัวสะกด)
+    const syllables = [];
+    let currentOnset = [];
     
-    // คลังรหัสพยัญชนะสากลแปลเป็นไทย
-    const reverseConsonants = {
-        "tʃ": "ช", "dʒ": "จ", "p": "พ", "b": "บ", "t": "ท", "d": "ด",
-        "k": "ค", "g": "ก", "\u0261": "ก", "f": "ฟ", "v": "ว", "s": "ซ",
-        "z": "ซ", "ʃ": "ช", "ʒ": "ช", "h": "ฮ", "m": "ม", "n": "น",
-        "ŋ": "ง", "r": "ร", "l": "ล", "w": "ว", "j": "ย", "θ": "ธ", "ð": "ด"
-    };
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        
+        if (token.type === 'C') {
+            currentOnset.push(token); // สะสมเป็นพยัญชนะต้น
+        } else if (token.type === 'V') {
+            const vowelToken = token;
+            const codaArr = [];
+            
+            // Lookahead: มองข้ามไปข้างหน้าเพื่อหาตัวสะกด
+            let j = i + 1;
+            while (j < tokens.length && tokens[j].type === 'C') {
+                const next1 = tokens[j];
+                const next2 = j + 1 < tokens.length ? tokens[j+1] : null;
+                const next3 = j + 2 < tokens.length ? tokens[j+2] : null;
+                
+                // หากตัวถัดไปติดกับสระเลย แสดงว่าเป็นพยัญชนะต้นของพยางค์ถัดไป ไม่ใช่ตัวสะกด!
+                if (next2 && next2.type === 'V') break; 
+                
+                // หากตัวถัดไป 2 ตัวรวมกันเป็นคำควบกล้ำที่ติดกับสระ ก็ไม่ใช่ตัวสะกดเช่นกัน
+                const validClusters = ['pr','br','tr','dr','kr','gr','ɡr','pl','bl','kl','gl','ɡl','fl','sl','kw','gw','ɡw','sm','sn','sp','st','sk','sw'];
+                if (next2 && next2.type === 'C' && next3 && next3.type === 'V') {
+                    if (validClusters.includes(next1.i + next2.i)) break;
+                }
+                
+                codaArr.push(next1);
+                j++;
+            }
+            
+            syllables.push({ onset: currentOnset, vowel: vowelToken, coda: codaArr });
+            i = j - 1; 
+            currentOnset = []; // เคลียร์ค่ารอพยางค์ถัดไป
+        }
+    }
     
-    // 3. ✨ [กลไกแก้สระลอย] วนลูปสแกนจับคู่ พยัญชนะต้น + สระ
-    vowelMap.forEach(v => {
-        const regex = new RegExp(cPattern + "?" + v.ipa, "g");
-        th = th.replace(regex, (match, p1) => {
-            if (p1) {
-                // กรณีมีพยัญชนะต้น -> แปลงพยัญชนะต้นนั้นแล้วประกบสระตามปกติ
-                return (reverseConsonants[p1] || "") + v.thai;
+    // 5. Renderer: นำพยางค์ที่วิเคราะห์เสร็จแล้วมาประกอบร่างเป็นคำไทย
+    let result = "";
+    for (let syl of syllables) {
+        let mainOnset = 'อ'; // ค่าพื้นฐานกรณีคำขึ้นต้นด้วยสระ
+        let leadingOnset = '';
+        
+        if (syl.onset.length > 0) {
+            const validClusters = ['pr','br','tr','dr','kr','gr','ɡr','pl','bl','kl','gl','ɡl','fl','sl','kw','gw','ɡw','sm','sn','sp','st','sk','sw'];
+            if (syl.onset.length >= 2) {
+                const last2 = syl.onset[syl.onset.length-2].i + syl.onset[syl.onset.length-1].i;
+                if (validClusters.includes(last2)) {
+                    // เป็นคำควบกล้ำแท้ ให้สระคร่อมทั้งสองตัว
+                    mainOnset = syl.onset[syl.onset.length-2].t + syl.onset[syl.onset.length-1].t;
+                    leadingOnset = syl.onset.slice(0, syl.onset.length-2).map(c=>c.t).join('');
+                } else {
+                    // ไม่ใช่ควบกล้ำแท้ ให้สระคร่อมแค่ตัวเดียว
+                    mainOnset = syl.onset[syl.onset.length-1].t;
+                    leadingOnset = syl.onset.slice(0, syl.onset.length-1).map(c=>c.t).join('');
+                }
             } else {
-                // กรณีไร้พยัญชนะต้น (คำขึ้นต้นด้วยสระ) -> บังคับเติมตัว "อ" นำทางทันที!
-                return v.ind;
+                mainOnset = syl.onset[0].t;
+            }
+        }
+        
+        // จัดการสระดิ้นได้ (เช่น เสียง อะ ถ่ามีตัวสะกดจะเป็น ไม้หันอากาศ ทันที)
+        let template = syl.vowel.t;
+        if (template === "FLEX") {
+            template = syl.coda.length > 0 ? "-ั" : "-ะ";
+        }
+        
+        let vStr = template.replace("-", mainOnset); // ใส่พยัญชนะต้นเข้าไปในรูปร่างสระ
+        
+        // จัดการตัวสะกดและการันต์ (ฉลาดพอที่จะรู้ว่าตัวไหนควรใส่การันต์)
+        let codaStr = "";
+        syl.coda.forEach((c, idx) => {
+            let char = c.t_coda || c.t; // ถ้ามีตัวสะกดเฉพาะ (เช่น v -> ฟ) ให้ใช้ตัวนั้น
+            if (syl.vowel.inherent_coda) {
+                codaStr += char + '์'; // ถ้าสระมีเสียงตัวสะกดในตัวอยู่แล้ว (เช่น อาว) ตัวสะกดถัดมาต้องเป็นการันต์
+            } else {
+                if (idx === 0) codaStr += char; // ตัวสะกดตัวแรกปกติ
+                else codaStr += char + '์';     // ตัวสะกดตัวที่สองขึ้นไปใส่การันต์
             }
         });
-    });
+        
+        result += leadingOnset + vStr + codaStr;
+    }
     
-    // 4. แปลงพยัญชนะเดี่ยวที่หลงเหลืออยู่ (พวกตัวสะกดปิดท้ายพยางค์ หรือพยัญชนะควบกล้ำตัวแรก)
-    Object.keys(reverseConsonants).forEach(c => {
-        const regex = new RegExp(c, "g");
-        th = th.replace(regex, reverseConsonants[c]);
-    });
-    
-    // 5. 👑 ปรับแต่งรูปคำตามไวยากรณ์ไทยให้มนุษย์อ่านง่าย 
-    // - ยุบรูปสระลดรูปเมื่อมีตัวสะกด ( สระ ะ + ตัวสะกด -> ไม้หันอากาศ ) เช่น บะสกลายเป็น บัส
-    th = th.replace(/ะ([ก-ฮ])/g, "ั$1");
-    
-    // - ตลบรูปสระหน้า (เ แ โ ไ) จากหลังพยัญชนะ ดีดกลับมาไว้ด้านหน้าคำให้ถูกต้อง
-    th = th.replace(/([ก-ฮ]{1,2})([เแโไ])/g, "$2$1");
-    
-    return th;
+    return result;
 }
 // ================= วางไว้ที่นอกสุดของไฟล์ script.js =================
 function showToast(message, type = 'success') {
