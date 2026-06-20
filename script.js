@@ -634,6 +634,95 @@ function updateAuthUI() {
         closeVocabModal();
     }
 }
+function convertIpaToThai(ipa) {
+    if (!ipa) return "";
+    
+    let th = ipa.toLowerCase();
+    
+    // 1. ล้างเครื่องหมายบอกเสียงเน้น (Stress) และจุดแบ่งพยางค์ในระบบ IPA ออกก่อน
+    th = th.replace(/[\/ˈˌ.]/g, "");
+    
+    // 2. จัดการคำลงท้ายยอดฮิต (Suffixes) ให้เป็นระบบตัวสะกดไทยที่ถูกต้อง (แก้บั๊กการันต์มั่ว)
+    th = th.replace(/ʃən$/g, "ชัน"); // เช่น action -> แอคชัน
+    th = th.replace(/st$/g, "สต์");  // เช่น test -> เทสต์
+    th = th.replace(/ts$/g, "ตส์");  // เช่น cats -> แคตส์
+    th = th.replace(/kt$/g, "กต์");  // เช่น act -> แอคต์
+    th = th.replace(/nd$/g, "นด์");  // เช่น and -> แอนด์
+    th = th.replace(/nt$/g, "นต์");  // เช่น want -> วอนต์
+    th = th.replace(/s$/g, "ส");    // ✨ แก้บั๊ก bus -> บัส (ไม่ใช่ บัส์)
+    th = th.replace(/z$/g, "ซ");    // เช่น quiz -> ควิซ
+    
+    // ตัวระบุกลุ่มพยัญชนะสากล IPA เพื่อใช้วิเคราะห์เสียงพยัญชนะต้น
+    const cPattern = "(tʃ|dʒ|p|b|t|d|k|g|\u0261|f|v|s|z|ʃ|ʒ|h|m|n|ŋ|r|l|w|j|θ|ð)";
+    
+    // คลังรหัสสระคู่และสระเดี่ยว (เรียงลำดับตัวยาวไปตัวสั้นป้องกันการแย่ง Match)
+    const vowelMap = [
+        { ipa: "eɪ", thai: "เ", ind: "เอ" },
+        { ipa: "aɪ", thai: "ไ", ind: "ไอ" },
+        { ipa: "oʊ", thai: "โ", ind: "โอ" },
+        { ipa: "əʊ", thai: "โ", ind: "โอ" },
+        { ipa: "ɔɪ", thai: "ออย", ind: "ออย" },
+        { ipa: "aʊ", thai: "าว", ind: "อาว" },
+        { ipa: "ɪŋ", thai: "ิง", ind: "อิง" },
+        { ipa: "eə", thai: "แอร์", ind: "แอร์" },
+        { ipa: "ɪə", thai: "เอีย", ind: "เอีย" },
+        { ipa: "ʊə", thai: "อัวร์", ind: "อัวร์" },
+        { ipa: "ər", thai: "อร์", ind: "เออร์" },
+        { ipa: "ɜː", thai: "อร์", ind: "เออร์" },
+        { ipa: "æ", thai: "แ", ind: "แอ" },
+        { ipa: "e", thai: "เ", ind: "เอ" },
+        { ipa: "ɑː", thai: "า", ind: "อา" },
+        { ipa: "ɑ", thai: "า", ind: "อา" },
+        { ipa: "iː", thai: "ี", ind: "อี" },
+        { ipa: "i", thai: "ี", ind: "อี" },
+        { ipa: "ɪ", thai: "ิ", ind: "อิ" },
+        { ipa: "ɔː", thai: "อ", ind: "ออ" },
+        { ipa: "ɔ", thai: "อ", ind: "ออ" },
+        { ipa: "ɒ", thai: "อ", ind: "ออ" },
+        { ipa: "uː", thai: "ู", ind: "อู" },
+        { ipa: "u", thai: "ู", ind: "อู" },
+        { ipa: "ʊ", thai: "ุ", ind: "อุ" },
+        { ipa: "ʌ", thai: "ะ", ind: "อะ" },
+        { ipa: "ə", thai: "ะ", ind: "อะ" }
+    ];
+    
+    // คลังรหัสพยัญชนะสากลแปลเป็นไทย
+    const reverseConsonants = {
+        "tʃ": "ช", "dʒ": "จ", "p": "พ", "b": "บ", "t": "ท", "d": "ด",
+        "k": "ค", "g": "ก", "\u0261": "ก", "f": "ฟ", "v": "ว", "s": "ซ",
+        "z": "ซ", "ʃ": "ช", "ʒ": "ช", "h": "ฮ", "m": "ม", "n": "น",
+        "ŋ": "ง", "r": "ร", "l": "ล", "w": "ว", "j": "ย", "θ": "ธ", "ð": "ด"
+    };
+    
+    // 3. ✨ [กลไกแก้สระลอย] วนลูปสแกนจับคู่ พยัญชนะต้น + สระ
+    vowelMap.forEach(v => {
+        const regex = new RegExp(cPattern + "?" + v.ipa, "g");
+        th = th.replace(regex, (match, p1) => {
+            if (p1) {
+                // กรณีมีพยัญชนะต้น -> แปลงพยัญชนะต้นนั้นแล้วประกบสระตามปกติ
+                return (reverseConsonants[p1] || "") + v.thai;
+            } else {
+                // กรณีไร้พยัญชนะต้น (คำขึ้นต้นด้วยสระ) -> บังคับเติมตัว "อ" นำทางทันที!
+                return v.ind;
+            }
+        });
+    });
+    
+    // 4. แปลงพยัญชนะเดี่ยวที่หลงเหลืออยู่ (พวกตัวสะกดปิดท้ายพยางค์ หรือพยัญชนะควบกล้ำตัวแรก)
+    Object.keys(reverseConsonants).forEach(c => {
+        const regex = new RegExp(c, "g");
+        th = th.replace(regex, reverseConsonants[c]);
+    });
+    
+    // 5. 👑 ปรับแต่งรูปคำตามไวยากรณ์ไทยให้มนุษย์อ่านง่าย 
+    // - ยุบรูปสระลดรูปเมื่อมีตัวสะกด ( สระ ะ + ตัวสะกด -> ไม้หันอากาศ ) เช่น บะสกลายเป็น บัส
+    th = th.replace(/ะ([ก-ฮ])/g, "ั$1");
+    
+    // - ตลบรูปสระหน้า (เ แ โ ไ) จากหลังพยัญชนะ ดีดกลับมาไว้ด้านหน้าคำให้ถูกต้อง
+    th = th.replace(/([ก-ฮ]{1,2})([เแโไ])/g, "$2$1");
+    
+    return th;
+}
 // ================= วางไว้ที่นอกสุดของไฟล์ script.js =================
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
@@ -749,7 +838,12 @@ async function fetchSmartVocab() {
         document.getElementById('add-example').value = detectedExample || `The manager approved the ${word} immediately.`; // สร้างประโยคจำลองถ้าไม่มีจากระบบ
         
         // กรอกคำอ่านสากลที่สแกนเจออย่างถูกต้อง หากหาไม่เจอจริงๆ ถึงจะใช้ฟอลแบ็กสแลชครอบ
-        document.getElementById('add-read').value = detectedPhonetic || `/${word}/`;
+        // นำข้อความ IPA ที่ได้เข้ากระบวนการแปลงร่างเป็นภาษาไทยก่อนนำไปกรอกลงกล่องข้อความ
+        if (detectedPhonetic) {
+            document.getElementById('add-read').value = convertIpaToThai(detectedPhonetic);
+        } else {
+            document.getElementById('add-read').value = `/${word}/`; // ฟอลแบ็กกรณีหาเสียงอ่านไม่เจอจริงๆ
+        }
 
         showToast('🎯 ดึงข้อมูลอัจฉริยะเสร็จสิ้น! ตรวจสอบความถูกต้องแล้วกดบันทึกได้เลยครับ', 'success');
 
